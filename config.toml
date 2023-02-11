@@ -1,0 +1,12 @@
+[essentials]
+# path to the unity hub editor folder
+unity_hub_path="C:\\Program Files\\Unity\\Hub\\Editor"
+# all default dependencies to select
+default_dependencies=[
+    "com.unity.collab-proxy",
+    "com.unity.feature.development",
+    "com.unity.textmeshpro",
+    "com.unity.timeline",
+    "com.unity.visualscripting",
+    "com.unity.ugui",
+]
