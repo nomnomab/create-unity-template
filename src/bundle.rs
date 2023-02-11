@@ -163,7 +163,7 @@ pub fn build(project_path: &str, data: Data) {
     println!("- {}", root_dir.to_str().unwrap());
     println!();
     println!("To pack the template, run:");
-    println!("- create-unity-template.exe run pack");
+    println!("- create-unity-template.exe pack");
     println!();
 
     // open root folder
