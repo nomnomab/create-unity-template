@@ -42,7 +42,7 @@ pub struct PackCommand {
 fn main() {
     let config = config::load_config();
 
-    println!("[create-unity-template - v0.1.0 - Created by Andrew Burke]");
+    println!("[create-unity-template - Created by Andrew Burke]");
     let args = Args::parse();
 
     match args.basic_commands {
@@ -264,17 +264,6 @@ fn pack_project(config: config::Config, _: PackCommand) -> std::io::Result<()> {
     tar.append_dir_all("package", &project_path)
         .unwrap_or_else(|e| panic!("Failed to pack tar file: {:?}", e));
 
-    let mut override_file = File::open(".\\___ManifestOverride.cs").unwrap();
-    tar.append_file(
-        "package\\ProjectData~\\Assets\\___ManifestOverride.cs",
-        &mut override_file,
-    )
-    .unwrap_or_else(|e| panic!("Failed to pack tar file: {:?}", e));
-
-    // load package.json from project
-    let package_json_path = format!("{}\\package.json", &project_path);
-    println!("{}", package_json_path);
-
     let contents = r#"
 using System.IO;
 using UnityEditor;
@@ -306,6 +295,23 @@ public static class ___ManifestOverride
     }
 }
     "#.trim_start();
+
+    std::fs::write(".\\___ManifestOverride.cs", &contents)
+        .unwrap_or_else(|e| panic!("Failed to create packer class file: {:?}", e));
+    let mut override_file = File::open(".\\___ManifestOverride.cs").unwrap();
+    tar.append_file(
+        "package\\ProjectData~\\Assets\\___ManifestOverride.cs",
+        &mut override_file,
+    )
+    .unwrap_or_else(|e| panic!("Failed to pack tar file: {:?}", e));
+    std::fs::remove_file(".\\___ManifestOverride.cs")
+        .unwrap_or_else(|e| panic!("Failed to delete packer class file: {:?}", e));
+
+    // load package.json from project
+    let package_json_path = format!("{}\\package.json", &project_path);
+    println!("{}", package_json_path);
+
+    let contents = fs::read_to_string(&package_json_path).unwrap();
     let data: serde_json::Value = serde_json::from_str(&contents).unwrap();
     let version = &data.as_object().unwrap()["unityFull"].as_str().unwrap();
 

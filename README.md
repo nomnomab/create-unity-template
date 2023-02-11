@@ -2,7 +2,7 @@
 
 A CLI tool to easily create custom unity project templates.
 
-![](/assets/preview.gif)
+![](/assets/template.png)
 
 ## Building the tool
 
@@ -31,10 +31,12 @@ default_dependencies=[
 
 ## Creating a new template
 
+![](/assets/new.png)
+
 > The name will be autoformatted for you to comply with the template naming requirements
 
 ```rs
-create-unity-template new template-name
+create-unity-template.exe new template-name
 ```
 
 The creation process will go through multiple steps:
@@ -64,8 +66,10 @@ The built template will be in the `/builds/` folder. There it can be modified to
 
 ## Packing a template
 
+![](/assets/pack.png)
+
 ```rs
-create-unity-template pack
+create-unity-template.exe pack
 ```
 
 > The template will be packed with a single-ran script when the project is loaded. This will automatically replace the generated manifest file with the one you created with the tool.
