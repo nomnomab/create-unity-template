@@ -17,6 +17,9 @@ pub struct Data {
     pub category: String,
     pub description: String,
     pub dependencies: serde_json::Value,
+    #[serde(rename(serialize = "defaultScene"))]
+    pub default_scene: String,
+    pub repository: String,
 }
 
 pub fn build(project_path: &str, data: Data) {

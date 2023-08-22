@@ -49,15 +49,20 @@ The creation process will go through multiple steps:
    - Used for filtering
    - Needs to be in comma-separated format
    - Not entire sure if this is used outside of packages
-4. Unity version
+4. Default Scene
+   - Loads up on first boot
+   - Has to be a full editor path, such as: "Assets/Scenes/SampleScene.unity"
+5. Repository
+   - A link to a repository location. Is purely for viewing purposes.
+6. Unity version
    - The Unity version the creator will operate upon
    - Will be shown in a selection list
-5. Package version
+7. Package version
    - The version of this package template
-6. Project path
+8. Project path
    - The path to the project this template will use to clone
    - Point to the root folder
-7. Dependencies
+9. Dependencies
    - The build-in dependencies that will be included in the manifest
    - Will be shown in a selection list
    - The default dependencies from the config will be auto-selected

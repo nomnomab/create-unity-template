@@ -62,6 +62,8 @@ fn create_project(config: config::Config, cmd: NewCommand) -> std::io::Result<()
     // dependencies
     // keywords
     // category
+    // defaultScene
+    // repository
 
     let mut name = cmd.name.to_lowercase().replace("-", "");
     name.retain(|c| !c.is_whitespace());
@@ -107,6 +109,18 @@ fn create_project(config: config::Config, cmd: NewCommand) -> std::io::Result<()
         .default(0)
         .with_prompt("Category")
         .interact_on_opt(&Term::stderr())?;
+
+    let default_scene = Input::<String>::new()
+        .with_prompt("Default Scene")
+        .with_initial_text("Assets/Scenes/SampleScene.unity")
+        .allow_empty(true)
+        .interact_text()?;
+
+    let repository = Input::<String>::new()
+        .with_prompt("Repository")
+        .with_initial_text("")
+        .allow_empty(true)
+        .interact_text()?;
 
     let category = match category {
         Some(index) => items[index].clone(),
@@ -210,6 +224,8 @@ fn create_project(config: config::Config, cmd: NewCommand) -> std::io::Result<()
         category: category.to_string(),
         description,
         dependencies: json!(dependencies),
+        default_scene,
+        repository,
     };
 
     bundle::build(&project_path, data);
@@ -264,6 +280,14 @@ fn pack_project(config: config::Config, _: PackCommand) -> std::io::Result<()> {
     tar.append_dir_all("package", &project_path)
         .unwrap_or_else(|e| panic!("Failed to pack tar file: {:?}", e));
 
+    // load package.json from project
+    let package_json_path = format!("{}\\package.json", &project_path);
+    println!("{}", package_json_path);
+
+    let contents = fs::read_to_string(&package_json_path).unwrap();
+    let data: serde_json::Value = serde_json::from_str(&contents).unwrap();
+    let version = &data.as_object().unwrap()["unityFull"].as_str().unwrap();
+
     let contents = r#"
 using System.IO;
 using UnityEditor;
@@ -276,25 +300,33 @@ public static class ___ManifestOverride
     [InitializeOnLoadMethod]
     private static void OnLoad()
     {
-        if (!File.Exists(InputPath))
-        {
-            Debug.LogWarning($"Input path does not exist at: {InputPath}");
-            Debug.LogWarning("___ManifestOverride.cs is most likely completed. Remove this file if so.");
-            return;
-        }
+        EditorApplication.delayCall += () => {
+            var fullScenePath = "FULL_SCENE_PATH";
+            if (!string.IsNullOrEmpty(fullScenePath)) {
+                Debug.LogWarning($"Attempting to open: {fullScenePath}");
+                UnityEditor.SceneManagement.EditorSceneManager.OpenScene(fullScenePath);
+            }
 
-        var targetPath = Path.Join(Application.dataPath, "..\\Packages\\manifest.json");
+            if (!File.Exists(InputPath))
+            {
+                Debug.LogWarning($"Input path does not exist at: {InputPath}");
+                Debug.LogWarning("___ManifestOverride.cs is most likely completed. Remove this file if so.");
+                return;
+            }
 
-        File.Copy(InputPath, targetPath, true);
+            var targetPath = Path.Join(Application.dataPath, "..\\Packages\\manifest.json");
 
-        // delete this file
-        AssetDatabase.DeleteAsset("Assets/___ManifestOverride.cs");
-        AssetDatabase.DeleteAsset("Assets/manifest.json");
-        AssetDatabase.SaveAssets();
-        AssetDatabase.Refresh();
+            File.Copy(InputPath, targetPath, true);
+
+            // delete this file
+            AssetDatabase.DeleteAsset("Assets/___ManifestOverride.cs");
+            AssetDatabase.DeleteAsset("Assets/manifest.json");
+            AssetDatabase.SaveAssets();
+            AssetDatabase.Refresh();
+        };
     }
 }
-    "#.trim_start();
+    "#.trim_start().replace("FULL_SCENE_PATH", &data.as_object().unwrap()["defaultScene"].as_str().unwrap());
 
     std::fs::write(".\\___ManifestOverride.cs", &contents)
         .unwrap_or_else(|e| panic!("Failed to create packer class file: {:?}", e));
@@ -306,14 +338,6 @@ public static class ___ManifestOverride
     .unwrap_or_else(|e| panic!("Failed to pack tar file: {:?}", e));
     std::fs::remove_file(".\\___ManifestOverride.cs")
         .unwrap_or_else(|e| panic!("Failed to delete packer class file: {:?}", e));
-
-    // load package.json from project
-    let package_json_path = format!("{}\\package.json", &project_path);
-    println!("{}", package_json_path);
-
-    let contents = fs::read_to_string(&package_json_path).unwrap();
-    let data: serde_json::Value = serde_json::from_str(&contents).unwrap();
-    let version = &data.as_object().unwrap()["unityFull"].as_str().unwrap();
 
     let template_folder = config.get_template_folder(version);
 
